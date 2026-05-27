@@ -1,0 +1,10 @@
+streamlit
+anthropic
+python-dotenv
+trafilatura
+youtube-transcript-api
+streamlit-mic-recorder
+edge-tts
+openai-whisper
+librosa
+soundfile
