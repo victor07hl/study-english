@@ -47,11 +47,16 @@ def autoplay_audio(file_path):
 
 # Sidebar
 with st.sidebar:
-    st.title("Settings")
-    if not os.getenv("ANTHROPIC_API_KEY"):
-        st.error("⚠️ ANTHROPIC_API_KEY missing in .env")
+    # Use a nice header/branding instead of "Settings"
+    st.markdown("<h2 style='text-align: center;'>🎓 Study English</h2>", unsafe_allow_html=True)
+    
+    # Attractive Status Indicator
+    if os.getenv("ANTHROPIC_API_KEY"):
+        st.markdown("<div style='text-align: center; color: #28a745; font-size: 40px;'>🤖</div>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align: center; color: #666; font-size: 14px;'>Tutor Online</p>", unsafe_allow_html=True)
     else:
-        st.success("✅ API Key loaded.")
+        st.markdown("<div style='text-align: center; color: #dc3545; font-size: 40px;'>⚠️</div>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align: center; color: #666; font-size: 14px;'>Key Missing in .env</p>", unsafe_allow_html=True)
     
     st.divider()
     

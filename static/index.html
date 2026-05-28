@@ -1,0 +1,640 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Study English — Voice</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --panel: #1a212b;
+      --panel-2: #232c38;
+      --text: #e6edf3;
+      --muted: #8b98a5;
+      --accent: #4f9eff;
+      --user: #2a3441;
+      --assistant: #1f3a5f;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --border: #2d3744;
+      --green: #22c55e;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0; height: 100%;
+      background: var(--bg); color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    body { display: flex; height: 100vh; }
+
+    /* ── Sidebar ── */
+    aside {
+      width: 290px; background: var(--panel); border-right: 1px solid var(--border);
+      padding: 20px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto;
+    }
+    h1 { font-size: 15px; margin: 0 0 4px; font-weight: 700; }
+    h2 { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin: 6px 0 2px; }
+    label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px; }
+    select, input[type="text"] {
+      width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border);
+      background: var(--panel-2); color: var(--text); font-size: 13px; cursor: pointer;
+    }
+    input[type="text"] { cursor: text; }
+    input[type="text"]::placeholder { color: var(--muted); }
+    button {
+      width: 100%; padding: 9px 12px; border-radius: 6px; border: 1px solid var(--border);
+      background: var(--panel-2); color: var(--text); font-size: 13px; cursor: pointer;
+      transition: background 0.15s;
+    }
+    button:hover:not(:disabled) { background: #2d3744; }
+    button.primary { background: var(--accent); color: white; border-color: var(--accent); font-weight: 600; }
+    button.primary:hover:not(:disabled) { background: #3a8fef; }
+    button.secondary { background: transparent; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    .badge { font-size: 11px; color: var(--muted); }
+    .kbd {
+      display: inline-block; padding: 1px 5px; border-radius: 3px;
+      border: 1px solid var(--border); font-size: 11px; color: var(--muted);
+      background: var(--panel-2); font-family: monospace;
+    }
+
+    /* ── Main area ── */
+    main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+    header.q-header {
+      padding: 12px 20px; border-bottom: 1px solid var(--border); background: var(--panel);
+      display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
+    }
+    .q-meta { font-size: 12px; color: var(--muted); }
+    .q-meta strong { color: var(--text); }
+
+    /* TTS indicator */
+    .tts-speaking {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; color: var(--accent); animation: fadeIn 0.3s;
+    }
+    .tts-dots span {
+      display: inline-block; width: 5px; height: 5px; border-radius: 50%;
+      background: var(--accent); animation: bounce 1.2s infinite;
+    }
+    .tts-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .tts-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce {
+      0%, 80%, 100% { transform: translateY(0); opacity: 0.6; }
+      40% { transform: translateY(-4px); opacity: 1; }
+    }
+
+    /* ── Chat ── */
+    #chat {
+      flex: 1; overflow-y: auto; padding: 20px;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .msg { max-width: 720px; padding: 12px 16px; border-radius: 10px; line-height: 1.55; white-space: pre-wrap; }
+    .msg.user { background: var(--user); align-self: flex-end; }
+    .msg.assistant { background: var(--assistant); align-self: flex-start; }
+    .msg .role { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+    .empty { text-align: center; color: var(--muted); padding: 60px 20px; font-size: 14px; }
+    .empty h3 { color: var(--text); margin-bottom: 8px; font-size: 16px; }
+
+    /* Typing indicator */
+    .typing-indicator {
+      display: flex; align-items: center; gap: 5px;
+      background: var(--assistant); padding: 14px 18px; border-radius: 10px;
+      align-self: flex-start;
+    }
+    .typing-indicator span {
+      width: 7px; height: 7px; border-radius: 50%; background: var(--muted);
+      animation: bounce 1.2s infinite;
+    }
+    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+    /* Interim transcript preview */
+    #transcriptPreview {
+      padding: 0 20px 6px;
+      font-size: 14px; color: var(--accent); min-height: 0;
+      transition: all 0.2s; font-style: italic;
+    }
+
+    /* ── Footer ── */
+    footer.controls {
+      padding: 16px 20px; border-top: 1px solid var(--border); background: var(--panel);
+      display: flex; gap: 12px; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .mic {
+      width: 72px; height: 72px; border-radius: 50%; border: 3px solid var(--accent);
+      background: var(--panel-2); color: var(--accent); font-size: 28px;
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
+      transition: all 0.2s; user-select: none; flex-shrink: 0;
+    }
+    .mic.recording {
+      background: var(--danger); color: white; border-color: var(--danger);
+      animation: pulse 1.2s infinite;
+    }
+    .mic.tts-active {
+      border-color: var(--warning); color: var(--warning); opacity: 0.6; cursor: not-allowed;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239,68,68,0.4); }
+      50% { transform: scale(1.05); box-shadow: 0 0 0 8px rgba(239,68,68,0); }
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .status { font-size: 13px; color: var(--muted); min-width: 180px; text-align: center; }
+    .timer {
+      font-size: 13px; color: var(--text); font-variant-numeric: tabular-nums;
+      font-family: monospace; min-width: 38px; text-align: center;
+    }
+    .timer.running { color: var(--danger); }
+    .footer-actions { display: flex; gap: 8px; }
+    .footer-actions button { width: auto; padding: 8px 12px; font-size: 13px; }
+    .send-btn {
+      background: var(--green); color: white; border-color: var(--green);
+      font-weight: 600; font-size: 14px; padding: 10px 18px; border-radius: 8px;
+      animation: fadeIn 0.2s;
+    }
+    .send-btn:hover:not(:disabled) { background: #16a34a; border-color: #16a34a; }
+  </style>
+</head>
+<body>
+  <aside>
+    <h1>🎓 Study English · Voice</h1>
+    <div class="badge" id="totalBadge">Loading topics…</div>
+
+    <h2>Practice Setup</h2>
+    <div>
+      <label for="input_type">Source</label>
+      <select id="input_type">
+        <option value="predefined">Pre-defined Topic</option>
+        <option value="custom">Custom Topic</option>
+        <option value="url">URL (Blog / YouTube)</option>
+      </select>
+    </div>
+
+    <div id="predefined_section">
+      <label for="topic_select">Topic</label>
+      <select id="topic_select"></select>
+    </div>
+
+    <div id="custom_section" style="display:none">
+      <label for="custom_topic">What to talk about</label>
+      <input type="text" id="custom_topic" placeholder="e.g., Music, Travel, Sports…" />
+    </div>
+
+    <div id="url_section" style="display:none">
+      <label for="url_input">Link (Blog or YouTube)</label>
+      <input type="text" id="url_input" placeholder="https://…" />
+    </div>
+
+    <button class="primary" id="startBtn">Start Practice</button>
+    <button class="secondary" id="feedbackBtn" disabled>Get session feedback</button>
+    <button class="secondary" id="stopSpeakBtn">Stop speaking</button>
+
+    <h2>Voice settings</h2>
+    <div>
+      <label for="voicePicker">Tutor voice</label>
+      <select id="voicePicker"></select>
+    </div>
+
+    <h2>Current session</h2>
+    <div id="currentMeta" class="badge">No session started</div>
+  </aside>
+
+  <main>
+    <header class="q-header">
+      <div class="q-meta" id="topbar">Voice mode — microphone &amp; speech synthesis.</div>
+      <div id="ttsStatus"></div>
+    </header>
+    <div id="chat">
+      <div class="empty">
+        <h3>Pick a topic on the left and click <em>Start Practice</em>.</h3>
+        <div>The tutor will speak first. Click the mic (or press <kbd>Space</kbd>) to answer.</div>
+      </div>
+    </div>
+    <div id="transcriptPreview"></div>
+    <footer class="controls">
+      <div class="status" id="status">Select a topic to start</div>
+      <button id="micBtn" class="mic" aria-label="Click to record">🎤</button>
+      <div class="timer" id="timerDisplay">0:00</div>
+      <div class="footer-actions">
+        <button id="sendBtn" class="send-btn" style="display:none">Send answer ↵</button>
+        <button id="replayBtn" class="secondary">⟳ Replay</button>
+      </div>
+    </footer>
+  </main>
+
+  <script>
+    // ── DOM helper ──
+    const $ = (id) => document.getElementById(id);
+
+    // ── Speech APIs ──
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const synth = window.speechSynthesis;
+    let recognition = null;
+    let isRecording = false;
+    let isTTSSpeaking = false;
+    let preferredVoice = null;
+
+    function buildVoicePicker() {
+      const voices = synth ? synth.getVoices() : [];
+      const sel = $("voicePicker");
+      const engVoices = voices.filter(v => v.lang.startsWith("en"));
+      sel.innerHTML = "";
+      if (!engVoices.length) {
+        const o = document.createElement("option");
+        o.textContent = "No English voices found";
+        sel.appendChild(o);
+        return;
+      }
+      engVoices.forEach((v, i) => {
+        const o = document.createElement("option");
+        o.value = i;
+        o.textContent = `${v.name} (${v.lang})`;
+        sel.appendChild(o);
+      });
+      const preferred = engVoices.findIndex(v =>
+        /Samantha|Google US English|Aria|Jenny|Microsoft David/.test(v.name)
+      );
+      sel.selectedIndex = preferred >= 0 ? preferred : 0;
+      preferredVoice = engVoices[sel.selectedIndex] || null;
+      sel.onchange = () => {
+        preferredVoice = engVoices[parseInt(sel.value)] || null;
+      };
+    }
+
+    if (synth) {
+      synth.onvoiceschanged = buildVoicePicker;
+      buildVoicePicker();
+    }
+
+    if (SR) {
+      recognition = new SR();
+      recognition.lang = "en-US";
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.maxAlternatives = 1;
+    }
+
+    // ── State ──
+    let sessionContent = "";
+    let messages = [];
+    let lastAssistant = "";
+    let timerInterval = null;
+    let timerSeconds = 0;
+    let typingEl = null;
+    let userStopped = false;
+    let sessionStarted = false;
+
+    // ── DOM refs ──
+    const chatEl       = $("chat");
+    const micBtn       = $("micBtn");
+    const startBtn     = $("startBtn");
+    const feedbackBtn  = $("feedbackBtn");
+    const stopBtn      = $("stopSpeakBtn");
+    const replayBtn    = $("replayBtn");
+    const statusEl     = $("status");
+    const ttsStatus    = $("ttsStatus");
+    const transcriptEl = $("transcriptPreview");
+    const timerDisplay = $("timerDisplay");
+    const sendBtn      = $("sendBtn");
+    const inputType    = $("input_type");
+
+    // ── Source type switching ──
+    inputType.onchange = () => {
+      $("predefined_section").style.display = inputType.value === "predefined" ? "block" : "none";
+      $("custom_section").style.display    = inputType.value === "custom"     ? "block" : "none";
+      $("url_section").style.display       = inputType.value === "url"        ? "block" : "none";
+    };
+
+    // ── Load topics ──
+    async function loadTopics() {
+      const badge = $("totalBadge");
+      try {
+        const r = await fetch("/api/topics");
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const topics = await r.json();
+        const sel = $("topic_select");
+        sel.innerHTML = topics.map(t => `<option value="${t.id}">${t.name}</option>`).join("");
+        badge.textContent = `${topics.length} topics available`;
+        badge.style.color = "";
+      } catch (e) {
+        badge.textContent = `⚠ Could not reach server (${e.message}) — retrying…`;
+        badge.style.color = "#ef4444";
+        setTimeout(loadTopics, 3000);
+      }
+    }
+    loadTopics();
+
+    // ── Timer ──
+    function startTimer() {
+      timerSeconds = 0;
+      timerDisplay.textContent = "0:00";
+      timerDisplay.classList.add("running");
+      timerInterval = setInterval(() => {
+        timerSeconds++;
+        const m = Math.floor(timerSeconds / 60);
+        const s = String(timerSeconds % 60).padStart(2, "0");
+        timerDisplay.textContent = `${m}:${s}`;
+      }, 1000);
+    }
+
+    function stopTimer() {
+      clearInterval(timerInterval);
+      timerInterval = null;
+      timerDisplay.classList.remove("running");
+      timerDisplay.textContent = "0:00";
+    }
+
+    // ── TTS ──
+    function speak(text) {
+      if (!synth) return;
+      synth.cancel();
+      const sentences = text.match(/[^.!?]+[.!?]+|\S[^.!?]*$/g) || [text];
+      const utterances = sentences.map(s => {
+        const u = new SpeechSynthesisUtterance(s.trim());
+        if (preferredVoice) u.voice = preferredVoice;
+        u.rate = 1.0; u.pitch = 1.0; u.volume = 1.0;
+        return u;
+      });
+
+      isTTSSpeaking = true;
+      updateMicState();
+      showTTSIndicator(true);
+
+      utterances[utterances.length - 1].onend = () => {
+        isTTSSpeaking = false;
+        updateMicState();
+        showTTSIndicator(false);
+      };
+
+      utterances.forEach(u => synth.speak(u));
+    }
+
+    function stopSpeaking() {
+      synth?.cancel();
+      isTTSSpeaking = false;
+      updateMicState();
+      showTTSIndicator(false);
+    }
+
+    function showTTSIndicator(show) {
+      ttsStatus.innerHTML = show
+        ? `<div class="tts-speaking">
+             <div class="tts-dots"><span></span><span></span><span></span></div>
+             Tutor speaking&hellip;
+           </div>`
+        : "";
+    }
+
+    // ── Mic state ──
+    function updateMicState() {
+      if (!recognition) { micBtn.disabled = true; return; }
+      if (isTTSSpeaking) {
+        micBtn.disabled = false;
+        micBtn.classList.remove("recording");
+        micBtn.classList.add("tts-active");
+        micBtn.textContent = "🔇";
+        sendBtn.style.display = "none";
+        setStatus("Tutor is speaking… click mic to interrupt");
+      } else if (isRecording) {
+        micBtn.disabled = false;
+        micBtn.classList.add("recording");
+        micBtn.classList.remove("tts-active");
+        micBtn.textContent = "⏹";
+        sendBtn.style.display = "";
+        setStatus("Recording — press Send or Space when done");
+      } else if (!sessionStarted) {
+        micBtn.disabled = false;
+        micBtn.classList.remove("recording", "tts-active");
+        micBtn.textContent = "🎤";
+        sendBtn.style.display = "none";
+        setStatus("Start a session first");
+      } else {
+        micBtn.disabled = false;
+        micBtn.classList.remove("recording", "tts-active");
+        micBtn.textContent = "🎤";
+        sendBtn.style.display = "none";
+        setStatus("Click mic or press Space to answer");
+      }
+    }
+
+    // ── Chat helpers ──
+    function clearChat() { chatEl.innerHTML = ""; }
+
+    function addMessage(role, text) {
+      const div = document.createElement("div");
+      div.className = `msg ${role}`;
+      const r = document.createElement("div");
+      r.className = "role";
+      r.textContent = role === "user" ? "You" : "Tutor";
+      const t = document.createElement("div");
+      t.textContent = text;
+      div.append(r, t);
+      chatEl.appendChild(div);
+      chatEl.scrollTop = chatEl.scrollHeight;
+      return div;
+    }
+
+    function showTyping() {
+      typingEl = document.createElement("div");
+      typingEl.className = "typing-indicator";
+      typingEl.innerHTML = "<span></span><span></span><span></span>";
+      chatEl.appendChild(typingEl);
+      chatEl.scrollTop = chatEl.scrollHeight;
+    }
+
+    function hideTyping() {
+      typingEl?.remove();
+      typingEl = null;
+    }
+
+    function setStatus(s) { statusEl.textContent = s; }
+
+    // ── Start session ──
+    startBtn.onclick = async () => {
+      stopSpeaking();
+      startBtn.disabled = true;
+      setStatus("Starting session…");
+
+      let sourceType = inputType.value;
+      let value = "";
+      if (sourceType === "predefined") value = $("topic_select").value;
+      else if (sourceType === "custom")    value = $("custom_topic").value.trim();
+      else                                 value = $("url_input").value.trim();
+
+      if (!value) {
+        setStatus("Please provide a topic or URL.");
+        startBtn.disabled = false;
+        return;
+      }
+
+      try {
+        const r = await fetch("/api/start", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ source_type: sourceType, value }),
+        });
+        if (!r.ok) {
+          const e = await r.json();
+          throw new Error(e.detail || "Failed to start session");
+        }
+        const data = await r.json();
+        sessionContent = data.content;
+        messages = [{ role: "assistant", content: data.initial_reply }];
+        sessionStarted = true;
+        clearChat();
+        const label = sourceType === "predefined"
+          ? $("topic_select").options[$("topic_select").selectedIndex]?.text
+          : sourceType === "custom" ? value : "URL content";
+        $("currentMeta").innerHTML = `<strong>${label}</strong>`;
+        feedbackBtn.disabled = false;
+        transcriptEl.textContent = "";
+        updateMicState();
+        addMessage("assistant", data.initial_reply);
+        lastAssistant = data.initial_reply;
+        speak(data.initial_reply);
+      } catch (e) {
+        setStatus("Error: " + e.message);
+      } finally {
+        startBtn.disabled = false;
+      }
+    };
+
+    // ── Ask tutor ──
+    async function askTutor(wrapUp = false) {
+      showTyping();
+      setStatus(wrapUp ? "Getting your feedback…" : "Tutor is thinking…");
+      try {
+        const endpoint = wrapUp ? "/api/feedback" : "/api/chat";
+        const body = wrapUp
+          ? { messages, content: sessionContent }
+          : { messages, content: sessionContent };
+
+        const r = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        if (!r.ok) {
+          const e = await r.json();
+          throw new Error(e.detail || "API error");
+        }
+        const data = await r.json();
+        hideTyping();
+        messages.push({ role: "assistant", content: data.reply });
+        addMessage("assistant", data.reply);
+        lastAssistant = data.reply;
+        speak(data.reply);
+        if (wrapUp) {
+          feedbackBtn.disabled = true;
+          setStatus("Session feedback received — start a new session to continue");
+        }
+      } catch (e) {
+        hideTyping();
+        setStatus("Error: " + e.message);
+        updateMicState();
+      }
+    }
+
+    // ── Recording ──
+    function toggleRecording() {
+      if (isTTSSpeaking) { stopSpeaking(); return; }
+      if (!sessionStarted) return;
+      isRecording ? stopRecording() : startRecording();
+    }
+
+    function startRecording() {
+      if (!recognition || isRecording || !sessionStarted) return;
+      transcriptEl.textContent = "";
+      userStopped = false;
+      try { recognition.start(); } catch (e) { return; }
+      isRecording = true;
+      startTimer();
+      updateMicState();
+    }
+
+    function stopRecording() {
+      if (!recognition || !isRecording) return;
+      userStopped = true;
+      recognition.stop();
+      stopTimer();
+      micBtn.classList.remove("recording");
+      sendBtn.style.display = "none";
+      setStatus("Processing…");
+    }
+
+    // ── Recognition events ──
+    let interimText = "";
+
+    if (recognition) {
+      recognition.onresult = (event) => {
+        let finalText = "";
+        let interim = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const t = event.results[i][0].transcript;
+          if (event.results[i].isFinal) finalText += t;
+          else interim += t;
+        }
+        if (finalText) interimText += finalText;
+        transcriptEl.textContent = (interimText + interim).trim() || "";
+      };
+
+      recognition.onerror = (e) => {
+        if (e.error === "no-speech" || e.error === "aborted") return;
+        isRecording = false;
+        userStopped = false;
+        stopTimer();
+        transcriptEl.textContent = "";
+        updateMicState();
+        setStatus("Mic error: " + e.error);
+      };
+
+      recognition.onend = async () => {
+        // If browser stopped recognition on its own, restart silently
+        if (!userStopped && isRecording) {
+          try { recognition.start(); return; } catch (e) { /* fall through */ }
+        }
+
+        isRecording = false;
+        userStopped = false;
+        stopTimer();
+        const transcript = interimText.trim();
+        interimText = "";
+        transcriptEl.textContent = "";
+
+        if (!transcript) {
+          updateMicState();
+          setStatus("Didn't catch that — try again");
+          return;
+        }
+        addMessage("user", transcript);
+        messages.push({ role: "user", content: transcript });
+        updateMicState();
+        await askTutor();
+      };
+    } else {
+      micBtn.disabled = true;
+      setStatus("Web Speech API not supported. Use Chrome, Edge, or Safari.");
+    }
+
+    // ── Bindings ──
+    micBtn.addEventListener("click", toggleRecording);
+
+    document.addEventListener("keydown", (e) => {
+      const tag = document.activeElement.tagName;
+      if (e.code === "Space" && !e.repeat && tag !== "INPUT" && tag !== "SELECT" && tag !== "BUTTON") {
+        e.preventDefault();
+        toggleRecording();
+      }
+    });
+
+    feedbackBtn.onclick = () => askTutor(true);
+    stopBtn.onclick     = stopSpeaking;
+    sendBtn.onclick     = stopRecording;
+    replayBtn.onclick   = () => lastAssistant && speak(lastAssistant);
+
+    updateMicState();
+  </script>
+</body>
+</html>

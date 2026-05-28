@@ -6,6 +6,15 @@ import os
 import torch
 import soundfile as sf
 import io
+import ssl
+
+# Fix for macOS SSL certificate issues during model download
+try:
+    _create_unverified_https_context = ssl._create_unverified_context
+except AttributeError:
+    pass
+else:
+    ssl._create_default_https_context = _create_unverified_https_context
 
 # Global variable for the model
 _whisper_model = None

@@ -11,9 +11,9 @@ class LLMProvider(ABC):
         pass
 
 class ClaudeProvider(LLMProvider):
-    def __init__(self, api_key=None, model="claude-3-5-sonnet-20240620"):
+    def __init__(self, api_key=None, model=None):
         self.client = anthropic.Anthropic(api_key=api_key or os.getenv("ANTHROPIC_API_KEY"))
-        self.model = model
+        self.model = model or os.getenv("ANTHROPIC_MODEL", "claude-opus-4-7")
 
     def get_response(self, messages, system_prompt):
         try:
